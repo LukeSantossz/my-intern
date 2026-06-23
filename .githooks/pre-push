@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Pre-push: run the Codex R2 cross-provider review (advisory by default).
+# The framework ships this hook assuming it sits at the repo root; here the framework
+# is the `.standards` submodule, so this thin wrapper points at the runner inside it.
+# Activate with: git config core.hooksPath .githooks
+# See .standards/docs/standards/codex_review.md for behavior, env vars, and bypass.
+set -u
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+runner="$repo_root/.standards/scripts/codex-review.sh"
+
+[ -f "$runner" ] || exit 0
+
+bash "$runner"
+exit $?
