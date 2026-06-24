@@ -10,13 +10,17 @@ export async function readRows(filePath) {
   throw new Error(`Unsupported spreadsheet type "${ext}" (expected .csv or .xlsx): ${filePath}`);
 }
 
+// Read a CSV file into header-keyed row objects, ignoring a leading UTF-8 BOM.
 async function readCsv(filePath) {
-  const records = parseCsv(await readFile(filePath, "utf8"));
+  const text = await readFile(filePath, "utf8");
+  // A BOM at file start (common in Excel exports) must not leak into the first key.
+  const records = parseCsv(text.replace(/^\uFEFF/, ""));
   if (records.length === 0) return [];
   const [header, ...rows] = records;
   return rows.map((cells) => toObject(header, cells));
 }
 
+// Read the first worksheet of an .xlsx file into header-keyed row objects.
 async function readXlsx(filePath) {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.readFile(filePath);
@@ -35,6 +39,7 @@ async function readXlsx(filePath) {
   return rows;
 }
 
+// Zip a header row and a cell row into an object, skipping unnamed columns.
 function toObject(header, cells) {
   const obj = {};
   header.forEach((key, index) => {
@@ -85,6 +90,9 @@ export function parseCsv(text) {
     } else {
       field += char;
     }
+  }
+  if (inQuotes) {
+    throw new Error("Malformed CSV: unterminated quoted field");
   }
   if (field !== "" || row.length > 0) endRow();
   return records;
