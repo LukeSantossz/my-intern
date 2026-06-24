@@ -1,10 +1,18 @@
 import path from "node:path";
 import { stat } from "node:fs/promises";
 
-// Resolve a per-row file path: absolute as-is, otherwise relative to assetsDir.
+// Resolve a per-row attachment path, kept inside the trusted assetsDir. Values
+// that escape the root (via "../" or an absolute path elsewhere) are rejected so
+// a malicious or malformed sheet cannot make a live submit upload arbitrary files.
 export function resolveAssetPath(value, assetsDir) {
   if (!value) return null;
-  return path.isAbsolute(value) ? value : path.resolve(assetsDir, value);
+  const baseDir = path.resolve(assetsDir);
+  const resolved = path.resolve(baseDir, value);
+  const relative = path.relative(baseDir, resolved);
+  if (relative === ".." || relative.startsWith(".." + path.sep) || path.isAbsolute(relative)) {
+    throw new Error(`attachment escapes assetsDir: ${value}`);
+  }
+  return resolved;
 }
 
 // Fill one row into an already-open page. Dry-run by default: it fills and
@@ -46,6 +54,7 @@ export async function fillRow(page, config, row, { dryRun = true, evidenceDir, r
   return { screenshotPath };
 }
 
+// Turn an arbitrary row key into a filesystem-safe screenshot filename stem.
 function sanitizeKey(key) {
   return String(key).replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 100) || "row";
 }

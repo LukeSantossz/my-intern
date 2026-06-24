@@ -6,6 +6,15 @@ import { loadConfig } from "./config.mjs";
 import { loadLedger, saveLedger, isDone, record } from "./ledger.mjs";
 import { fillRow } from "./filler.mjs";
 
+// Choose a stable ledger key for a row: the key column's value when present
+// (including falsy values such as 0), else the 1-based row number.
+export function resolveRowKey(row, keyColumn, index) {
+  const rawKey = keyColumn ? row[keyColumn] : undefined;
+  return rawKey !== undefined && rawKey !== null && rawKey !== ""
+    ? String(rawKey)
+    : String(index + 1);
+}
+
 // Orchestrate a run: read the sheet, drive a headless browser per row, and
 // persist the ledger after each row. Dry-run by default (no live submission).
 export async function run({
@@ -34,7 +43,7 @@ export async function run({
     const page = await browser.newPage();
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      const rowKey = keyColumn && row[keyColumn] ? row[keyColumn] : String(i + 1);
+      const rowKey = resolveRowKey(row, keyColumn, i);
       if (isDone(ledger, rowKey)) {
         summary.skipped++;
         continue;
