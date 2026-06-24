@@ -1,0 +1,11 @@
+{
+  "keyColumn": "id",
+  "formPath": "./fixture.html",
+  "readySelector": "#form",
+  "fields": [
+    { "selector": "#nome", "column": "nome" },
+    { "selector": "#email", "column": "email" }
+  ],
+  "fileField": { "selector": "#anexo", "column": "anexo_path", "required": true },
+  "submitSelector": "#enviar"
+}
