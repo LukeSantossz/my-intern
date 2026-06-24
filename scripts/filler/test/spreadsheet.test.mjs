@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import ExcelJS from "exceljs";
-import { readRows } from "../lib/spreadsheet.mjs";
+import { readRows, parseCsv } from "../lib/spreadsheet.mjs";
 
 test("reads_all_rows_from_sample_spreadsheet", async () => {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "filler-sheet-"));
@@ -33,4 +33,23 @@ test("reads_all_rows_from_sample_spreadsheet", async () => {
   } finally {
     await rm(tmp, { recursive: true, force: true });
   }
+});
+
+test("strips_utf8_bom_from_csv_header", async () => {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), "filler-bom-"));
+  try {
+    const csv = path.join(tmp, "data.csv");
+    // Excel-style exports prepend a UTF-8 BOM; it must not bleed into the first key.
+    await writeFile(csv, "﻿id,nome\n1,Ana\n");
+    const rows = await readRows(csv);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].id, "1");
+    assert.equal(rows[0].nome, "Ana");
+  } finally {
+    await rm(tmp, { recursive: true, force: true });
+  }
+});
+
+test("rejects_unterminated_quoted_field", () => {
+  assert.throws(() => parseCsv('id,nome\n1,"unterminated\n'), /[Mm]alformed|unterminated/);
 });

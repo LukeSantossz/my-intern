@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { run } from "../lib/runner.mjs";
+import { run, resolveRowKey } from "../lib/runner.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const configPath = path.join(here, "..", "fixtures", "fixture.config.json");
@@ -35,6 +35,15 @@ test("ledger_is_written_and_idempotent", async () => {
   } finally {
     await rm(tmp, { recursive: true, force: true });
   }
+});
+
+test("resolve_row_key_preserves_falsy_key_values", () => {
+  // A key column value of 0 is valid and must not collapse to the row number.
+  assert.equal(resolveRowKey({ id: 0 }, "id", 5), "0");
+  assert.equal(resolveRowKey({ id: "abc" }, "id", 0), "abc");
+  // Empty or absent keys fall back to the 1-based row number.
+  assert.equal(resolveRowKey({ id: "" }, "id", 5), "6");
+  assert.equal(resolveRowKey({}, undefined, 2), "3");
 });
 
 test("row_error_is_recorded_and_batch_continues", async () => {
