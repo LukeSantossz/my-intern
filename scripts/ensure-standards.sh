@@ -26,8 +26,10 @@ sentinel="$SUBMODULE_PATH/$SENTINEL_REL"
 [ -f "$sentinel" ] && exit 0
 
 # Preferred path: a real submodule checkout, which works wherever the git
-# credential is allowed to reach the source repository.
-if git submodule update --init --recursive "$SUBMODULE_PATH" >/dev/null 2>&1 && [ -f "$sentinel" ]; then
+# credential is allowed to reach the source repository. GIT_TERMINAL_PROMPT=0
+# keeps it non-interactive so a missing credential fails fast instead of
+# blocking session startup on a hidden prompt.
+if GIT_TERMINAL_PROMPT=0 git submodule update --init --recursive "$SUBMODULE_PATH" >/dev/null 2>&1 && [ -f "$sentinel" ]; then
   echo "ensure-standards: initialized $SUBMODULE_PATH via git submodule" >&2
   exit 0
 fi
@@ -42,7 +44,8 @@ fi
 tmp_dir="$(mktemp -d)" || exit 0
 trap 'rm -rf "$tmp_dir"' EXIT
 
-if ! curl -fsSL "$TARBALL_BASE/$pinned_commit" -o "$tmp_dir/standards.tar.gz" 2>/dev/null; then
+# Bounded timeouts so a stalled connection cannot hang session startup.
+if ! curl -fsSL --connect-timeout 5 --max-time 20 "$TARBALL_BASE/$pinned_commit" -o "$tmp_dir/standards.tar.gz" 2>/dev/null; then
   echo "ensure-standards: WARNING could not fetch $SUBMODULE_PATH tarball @ $pinned_commit; standards unavailable" >&2
   exit 0
 fi
