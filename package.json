@@ -1,0 +1,17 @@
+{
+  "name": "my-intern-filler",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Site-agnostic, spreadsheet-driven form-filling engine (dry-run) for Claude Code on the web.",
+  "scripts": {
+    "test": "node --test scripts/filler/test/*.test.mjs"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0",
+    "playwright": "1.56.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
