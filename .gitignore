@@ -1,0 +1,9 @@
+# Node
+node_modules/
+
+# Form-filling engine runtime outputs (evidence screenshots and run ledgers)
+scripts/filler/**/evidence/
+*.ledger.json
+
+# Logs
+*.log
